@@ -81,7 +81,7 @@
 #define FLOW_TASK_PRI           3
 #define SYSTEM_TASK_PRI         2
 #define CRTP_TX_TASK_PRI        2
-#define CRTP_RX_TASK_PRI        2
+#define CRTP_RX_TASK_PRI        3 // changed from 2 to 3
 #define EXTRX_TASK_PRI          2
 #define ZRANGER_TASK_PRI        2
 #define ZRANGER2_TASK_PRI       2
@@ -93,7 +93,7 @@
 #define USDLOG_TASK_PRI         1
 #define USDWRITE_TASK_PRI       0
 #define PCA9685_TASK_PRI        3
-#define CMD_HIGH_LEVEL_TASK_PRI 2
+#define CMD_HIGH_LEVEL_TASK_PRI 2 // from 2to4
 
 #define SYSLINK_TASK_PRI        5
 #define USBLINK_TASK_PRI        3

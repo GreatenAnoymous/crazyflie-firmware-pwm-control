@@ -270,6 +270,8 @@ static int32_t lastPrediction;
 static int32_t lastBaroUpdate;
 static int32_t lastPNUpdate;
 static Axis3f accAccumulator;
+static Axis3f accAccumulatorSENT;  // NOL Add
+static Axis3f gyroAccumulatorSENT;  // NOL Add
 static float thrustAccumulator;
 static Axis3f gyroAccumulator;
 static baro_t baroAccumulator;
@@ -412,6 +414,10 @@ void estimatorKalman(state_t *state, sensorData_t *sensors, control_t *control, 
 
     float dt = (float)(osTick-lastPrediction)/configTICK_RATE_HZ;
     stateEstimatorPredict(thrustAccumulator, &accAccumulator, &gyroAccumulator, dt);
+
+    // ADDED Nol
+    gyroAccumulatorSENT = gyroAccumulator;
+    accAccumulatorSENT = accAccumulator;
 
     if (!quadIsFlying) { // accelerometers give us information about attitude on slanted ground
       stateEstimatorUpdateWithAccOnGround(&accAccumulator);

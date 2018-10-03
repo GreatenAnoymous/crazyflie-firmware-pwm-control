@@ -34,6 +34,8 @@
 static bool motorSetEnable = false;
 
 uint32_t packedMotors;
+uint16_t stamp_tx;			// add declaration for stamp variable
+int32_t controlTick = 0;
 
 
 static struct {
@@ -75,7 +77,7 @@ void powerStop()
 }
 
 
-void custPowerDistribution(uint16_t m1, uint16_t m2, uint16_t m3, uint16_t m4)
+void custPowerDistribution(uint16_t m1, uint16_t m2, uint16_t m3, uint16_t m4, uint32_t tick)
 {
     motorPower.m1 = (uint16_t) limitThrust(m1);
     motorPower.m2 = (uint16_t) limitThrust(m2);
@@ -114,20 +116,76 @@ void custPowerDistribution(uint16_t m1, uint16_t m2, uint16_t m3, uint16_t m4)
       motorsSetRatio(MOTOR_M4, (uint16_t) motorPower.m4);
     }
 
-    packedMotors =   ((motorPower.m1 & 0xFF00) >> 8)
+    uint32_t tmp_packedMotors =   ((motorPower.m1 & 0xFF00) >> 8)
   		           + ((motorPower.m2 & 0xFF00))
                    + ((motorPower.m3 & 0xFF00) << 8)
   				   + ((motorPower.m4 & 0xFF00) << 16);
 
+    if (tmp_packedMotors != packedMotors){
+    	controlTick = (int32_t) tick;
+    }
+    packedMotors = tmp_packedMotors;
 
 }
 
+void custPowerDistributionTwo(uint16_t m1, uint16_t m2, uint16_t m3, uint16_t m4, uint16_t stamp)
+{
+    motorPower.m1 = (uint16_t) limitThrust(m1);
+    motorPower.m2 = (uint16_t) limitThrust(m2);
+    motorPower.m3 = (uint16_t) limitThrust(m3);
+    motorPower.m4 = (uint16_t) limitThrust(m4);
+    motorPowerSet.m1 = motorPower.m1;
+    motorPowerSet.m2 = motorPower.m2;
+    motorPowerSet.m3 = motorPower.m3;
+    motorPowerSet.m4 = motorPower.m4;
 
-void powerDistribution(const control_t *control)
+//    if(motorPower.m1 > 60000){
+//    	motorPower.m1 = 60000;
+//    }
+//
+//    if(motorPower.m2 > 60000){
+//      motorPower.m2 = 60000;
+//    }
+//
+//    if(motorPower.m3 > 60000){
+//      motorPower.m3 = 60000;
+//    }
+//
+//    if(motorPower.m4 > 60000){
+//      motorPower.m4 = 60000;
+//    }
+
+    if (motorSetEnable)
+    {
+      motorsSetRatio(MOTOR_M1, (uint16_t) motorPowerSet.m1);
+      motorsSetRatio(MOTOR_M2, (uint16_t) motorPowerSet.m2);
+      motorsSetRatio(MOTOR_M3, (uint16_t) motorPowerSet.m3);
+      motorsSetRatio(MOTOR_M4, (uint16_t) motorPowerSet.m4);
+    }
+    else
+    {
+      motorsSetRatio(MOTOR_M1, (uint16_t) motorPower.m1);
+      motorsSetRatio(MOTOR_M2, (uint16_t) motorPower.m2);
+      motorsSetRatio(MOTOR_M3, (uint16_t) motorPower.m3);
+      motorsSetRatio(MOTOR_M4, (uint16_t) motorPower.m4);
+    }
+
+    uint32_t tmp_packedMotors =   ((motorPower.m1 & 0xFF00) >> 8)
+  		           + ((motorPower.m2 & 0xFF00))
+                   + ((motorPower.m3 & 0xFF00) << 8)
+  				   + ((motorPower.m4 & 0xFF00) << 16);
+
+    packedMotors = tmp_packedMotors;
+
+    stamp_tx = stamp; // pass the stamp to transmit
+
+}
+
+void powerDistribution(const control_t *control, uint32_t tick)
 {
 
-	custPowerDistribution(control->roll, (uint16_t) control->thrust, control->yaw, control->pitch);
-	/*
+	//custPowerDistribution(control->roll, (uint16_t) control->thrust, control->yaw, control->pitch, tick);
+
   #ifdef QUAD_FORMATION_X
     int16_t r = control->roll / 2.0f;
     int16_t p = control->pitch / 2.0f;
@@ -160,13 +218,17 @@ void powerDistribution(const control_t *control)
     motorsSetRatio(MOTOR_M3, motorPower.m3);
     motorsSetRatio(MOTOR_M4, motorPower.m4);
   }
-  */
+
 }
 
-
-LOG_GROUP_START(motorCompact)
+LOG_GROUP_START(motorCompact) //ADD STAMP
 LOG_ADD(LOG_UINT32, pwms, &packedMotors)
+LOG_ADD(LOG_UINT16, packet_id, &stamp_tx) // Lambert add stamp to this log block for packet id
 LOG_GROUP_STOP(motorCompact)
+
+//LOG_GROUP_START(tickCount)
+//LOG_ADD(LOG_UINT32, boomtick, &packedMotors)
+//LOG_GROUP_STOP(tickCount)
 
 PARAM_GROUP_START(motorPowerSet)
 PARAM_ADD(PARAM_UINT8, enable, &motorSetEnable)
@@ -174,11 +236,11 @@ PARAM_ADD(PARAM_UINT16, m1, &motorPowerSet.m1)
 PARAM_ADD(PARAM_UINT16, m2, &motorPowerSet.m2)
 PARAM_ADD(PARAM_UINT16, m3, &motorPowerSet.m3)
 PARAM_ADD(PARAM_UINT16, m4, &motorPowerSet.m4)
-PARAM_GROUP_STOP(ring)
+PARAM_GROUP_STOP(motorPowerSet)
 
-LOG_GROUP_START(motor)
-LOG_ADD(LOG_INT32, m4, &motorPower.m4)
-LOG_ADD(LOG_INT32, m1, &motorPower.m1)
-LOG_ADD(LOG_INT32, m2, &motorPower.m2)
-LOG_ADD(LOG_INT32, m3, &motorPower.m3)
-LOG_GROUP_STOP(motor)
+//LOG_GROUP_START(motor)
+//LOG_ADD(LOG_INT32, m4, &motorPower.m4)
+//LOG_ADD(LOG_INT32, m1, &controlTick)
+//LOG_ADD(LOG_INT32, m2, &motorPower.m2)
+//LOG_ADD(LOG_INT32, m3, &motorPower.m3)
+//LOG_GROUP_STOP(motor)

@@ -5,6 +5,7 @@
 #include "controller.h"
 #include "controller_pid.h"
 #include "controller_mellinger.h"
+#include "controller_pwm.h"
 
 #define DEFAULT_CONTROLLER ControllerTypePID
 static ControllerType currentController = ControllerTypeAny;
@@ -19,7 +20,8 @@ typedef struct {
 
 static ControllerFcns controllerFunctions[] = {
   {.init = 0, .test = 0, .update = 0}, // Any
-  {.init = controllerPidInit, .test = controllerPidTest, .update = controllerPid},
+  {.init = 0, .test = 0, .update = 0}, //pwm controller
+  {.init = controllerPidInit, .test = controllerPidTest, .update = controllerPid}, //pid controller
   {.init = controllerMellingerInit, .test = controllerMellingerTest, .update = controllerMellinger},
 };
 
